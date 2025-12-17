@@ -45,4 +45,26 @@ public class ProjectManager {
     public List<Project> getProjects() {
         return projects;
     }
+    
+ // Yeni Metot: ID'ye göre görev bulur veya hata fırlatır
+    public Task findTaskById(int taskId) throws TaskNotFoundException {
+        // Tüm projelerdeki görevleri tek bir akışta topla
+        return projects.stream()
+                .flatMap(p -> p.getTasks().stream())
+                .filter(t -> t.getTaskId() == taskId)
+                .findFirst()
+                .orElseThrow(() -> new TaskNotFoundException("ID " + taskId + " olan görev bulunamadı."));
+    }
+    
+    // Yeni Metot: ID'ye göre kullanıcı bulur veya hata fırlatır
+    public User findUserById(int userId) throws UserNotFoundException {
+        return users.stream()
+                .filter(u -> u.getUserId() == userId)
+                .findFirst()
+                .orElseThrow(() -> new UserNotFoundException("ID " + userId + " olan kullanıcı bulunamadı."));
+    }
 }
+
+
+
+
