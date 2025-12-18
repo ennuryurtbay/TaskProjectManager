@@ -46,5 +46,7 @@ public class MainApp {
         tt1.completeTask(); // Arayüz metodunu çağır
         
         System.out.println("\nUygulama basariyla calisti.");
+     // GÜN 7: Kaydetme Testi
+        manager.saveProjectsToFile("proje_verileri.txt");
     }
 }
