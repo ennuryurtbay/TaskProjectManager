@@ -1,5 +1,8 @@
 package com.project.model;
-
+/**
+ * Proje, kullanıcı ve görevler arasındaki ilişkileri yöneten merkezi iş mantığı sınıfıdır.
+ * Verileri hızlı erişim için HashMap yapısında saklar.
+ */
 import java.time.LocalDateTime;
 
 import java.util.*; // Map ve HashMap için eklendi
@@ -26,7 +29,12 @@ public class ProjectManager {
     public List<Project> getProjects() {
         return new ArrayList<>(projectMap.values());
     }
-
+    /**
+     * Verilen ID'ye sahip görevi tüm projeler içinde arar.
+     * @param taskId Aranan görevin ID'si
+     * @return Bulunan Task nesnesi
+     * @throws TaskNotFoundException Görev bulunamazsa fırlatılır[cite: 23].
+     */
     // ID'ye göre kullanıcı bulma 
     public User findUserById(int userId) throws UserNotFoundException {
         User user = userMap.get(userId);
@@ -56,10 +64,15 @@ public class ProjectManager {
         }
     }
 
-	public List<Task> getSortedTasks(Project p1, TaskSorter prioritySorter) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    /**
+     * Polimorfik Özellik: Görevleri verilen sıralayıcıya (TaskSorter) göre sıralar.
+     * @param project Sıralanacak görevlerin ait olduğu proje
+     * @param sorter Strateji desenine göre kullanılacak sıralama mantığı
+     * @return Sıralanmış görev listesi
+     */
+    public List<Task> getSortedTasks(Project project, TaskSorter sorter) {
+        return sorter.sort(project.getTasks());
+    }
 }
 
 

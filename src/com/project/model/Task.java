@@ -1,5 +1,8 @@
 package com.project.model; 
-
+/**
+ * Proje içindeki her bir görevi temsil eden temel sınıftır.
+ * Encapsulation ve Kalıtım prensiplerini uygulamaktadır[cite: 23].
+ */
 import java.time.LocalDateTime;
 
 public class Task implements Completable {
