@@ -16,10 +16,18 @@ public class MainFrame extends JFrame {
     private Quiz selectedQuiz;
 
     public MainFrame(QuizManager manager) {
+        // GÜN 16: Program açıldığında dosyadan verileri yükle
+        List<Quiz> savedQuizzes = FileManager.loadQuizzes();
+        if (savedQuizzes != null && !savedQuizzes.isEmpty()) {
+            for (Quiz q : savedQuizzes) {
+                manager.addQuiz(q);
+            }
+        }
+        
         this.manager = manager;
-        setTitle("Quiz Management System - Dashboard");
+        setTitle("Quiz Management System - Dashboard (File I/O)");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1000, 650);
+        setSize(1100, 650);
         setLocationRelativeTo(null);
 
         // Renkler
@@ -49,26 +57,43 @@ public class MainFrame extends JFrame {
         stats.add(lblTotalQuestions); stats.add(lblTotalPoints);
         sidePanel.add(stats, BorderLayout.SOUTH);
 
-        // 2. ÜST PANEL
+        // 2. ÜST PANEL (Yönetim Butonları)
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topPanel.setBackground(headerColor);
+        
         JButton btnAddQuiz = new JButton("Yeni Sınav");
         JButton btnAddQuestion = new JButton("Soru Ekle");
         JButton btnStart = new JButton("Sınavı Başlat");
         JButton btnReport = new JButton("Yönetici Raporu");
-        topPanel.add(btnAddQuiz); topPanel.add(btnAddQuestion); topPanel.add(btnStart); topPanel.add(btnReport);
+        
+        // GÜN 16: Kaydet Butonu
+        JButton btnSave = new JButton("Değişiklikleri Kaydet");
+        btnSave.setBackground(new Color(40, 167, 69)); // Yeşil renk
+        btnSave.setForeground(Color.WHITE);
 
-        // 3. MERKEZ PANEL (SORU VE CEVAP GİZLİ)
-        // İstediğin gibi hem Soru hem de Cevap durumunu gizli gösteriyoruz
+        topPanel.add(btnAddQuiz); 
+        topPanel.add(btnAddQuestion); 
+        topPanel.add(btnStart); 
+        topPanel.add(btnReport);
+        topPanel.add(btnSave);
+
+        // 3. MERKEZ PANEL (Soru ve Cevap Maskelenmiş Tablo)
         String[] columns = {"ID", "Soru Durumu", "Cevap Durumu", "Puan Değeri"};
         tableModel = new DefaultTableModel(columns, 0);
         table = new JTable(tableModel);
         table.setRowHeight(30);
         
-        // AKSİYONLAR
+        // --- BUTON AKSİYONLARI ---
+
+        // Kaydet Aksiyonu (GÜN 16)
+        btnSave.addActionListener(e -> {
+            FileManager.saveQuizzes(manager.getQuizzes());
+            JOptionPane.showMessageDialog(this, "Tüm veriler 'quizzes.dat' dosyasına başarıyla kaydedildi!");
+        });
+
         btnAddQuiz.addActionListener(e -> {
             String name = JOptionPane.showInputDialog(this, "Sınav Adı:");
-            if (name != null) {
+            if (name != null && !name.trim().isEmpty()) {
                 Quiz nq = new Quiz(manager.getQuizzes().size() + 1, name);
                 manager.addQuiz(nq);
                 updateQuizList();
@@ -85,24 +110,28 @@ public class MainFrame extends JFrame {
             JTextArea area = new JTextArea(20, 50);
             area.setText(gen.generateReport(manager.getQuizzes()));
             area.setEditable(false);
-            JOptionPane.showMessageDialog(this, new JScrollPane(area), "Detaylı Yönetici Raporu", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, new JScrollPane(area), "Yönetici Raporu", JOptionPane.INFORMATION_MESSAGE);
         });
 
         add(topPanel, BorderLayout.NORTH);
         add(sidePanel, BorderLayout.WEST);
         add(new JScrollPane(table), BorderLayout.CENTER);
+        
+        // Başlangıçta listeyi doldur
         updateQuizList();
     }
 
     private void updateQuizList() {
         listModel.clear();
         for (Quiz q : manager.getQuizzes()) listModel.addElement(q);
-        if (!manager.getQuizzes().isEmpty() && selectedQuiz == null) quizJList.setSelectedIndex(0);
+        if (!manager.getQuizzes().isEmpty() && selectedQuiz == null) {
+            quizJList.setSelectedIndex(0);
+        }
     }
 
     private void startQuizSession() {
         if (selectedQuiz == null || selectedQuiz.getQuestions().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Seçili sınavda soru bulunamadı!");
+            JOptionPane.showMessageDialog(this, "Lütfen bir sınav seçin ve soru ekleyin!");
             return;
         }
         int score = 0;
@@ -110,28 +139,35 @@ public class MainFrame extends JFrame {
             String ans = JOptionPane.showInputDialog(this, "SORU: " + q.getText());
             if (ans != null && q.checkAnswer(ans)) score += q.getPoints();
         }
-        JOptionPane.showMessageDialog(this, "Sınav Bitti. Toplam Puanınız: " + score);
+        JOptionPane.showMessageDialog(this, "Sınav Bitti. Toplam Puan: " + score);
     }
 
     private void addNewQuestion() {
-        if (selectedQuiz == null) return;
+        if (selectedQuiz == null) {
+            JOptionPane.showMessageDialog(this, "Lütfen önce bir sınav seçin!");
+            return;
+        }
         try {
             String txt = JOptionPane.showInputDialog(this, "Soru Metni:");
             String ans = JOptionPane.showInputDialog(this, "Doğru Cevap:");
             int pts = Integer.parseInt(JOptionPane.showInputDialog(this, "Puan Değeri:"));
-            selectedQuiz.addQuestion(new MultipleChoiceQuestion(selectedQuiz.getQuestions().size()+1, txt, ans, pts, null));
+            
+            selectedQuiz.addQuestion(new MultipleChoiceQuestion(
+                selectedQuiz.getQuestions().size() + 1, txt, ans, pts, java.util.Arrays.asList("A", "B", "C")
+            ));
             refreshTable(selectedQuiz.getQuestions());
-        } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Geçersiz giriş!"); }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Hata: Geçersiz giriş.");
+        }
     }
 
-    // TABLO GÜNCELLEME: Hem Soru hem Cevap Gizlendi
     private void refreshTable(List<Question> questions) {
         tableModel.setRowCount(0);
         int total = 0;
         for (Question q : questions) {
             tableModel.addRow(new Object[]{
                 q.getId(), 
-                "Soru Hazır (Gizli)", 
+                "Soru Kayıtlı (Gizli)", 
                 "Cevap Kayıtlı (Gizli)", 
                 q.getPoints()
             });
@@ -139,6 +175,6 @@ public class MainFrame extends JFrame {
         }
         lblTotalQuestions.setText("Toplam Soru: " + questions.size());
         lblTotalPoints.setText("Toplam Puan: " + total);
-        setTitle("Quiz System - Active Quiz: " + selectedQuiz.getQuizName());
+        if(selectedQuiz != null) setTitle("Quiz Dashboard - " + selectedQuiz.getQuizName());
     }
 }
