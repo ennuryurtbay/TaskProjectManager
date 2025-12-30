@@ -28,4 +28,14 @@ public class FileManager {
             return new ArrayList<>();
         }
     }
+    
+ // Raporu okunabilir bir .txt dosyasına aktarır
+    public static void exportToText(String reportContent, File file) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+            writer.println(reportContent);
+            System.out.println("Rapor dışa aktarıldı: " + file.getAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
